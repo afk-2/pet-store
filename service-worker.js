@@ -27,7 +27,7 @@ self.addEventListener("install", (e) => {
 //     e.respondWith(
 //         // check if the cache has the file
 //         caches.match(e.request).then(function (r) {
-//             console.log("[Service Worker] Fetching resource: " + e.request.url());
+//             console.log("[Service Worker] Fetching resource: " + e.request.url);
 //             // r is the matching file if it exists in the cache
 //             return r
 //         })
@@ -42,6 +42,7 @@ self.addEventListener("fetch", function (e) {
                 // add the new file to cache
                 return caches.open(cacheName).then(function (cache) {
                     cache.put(e.request, response.clone());
+                    return response; // returns response to the browser
                 });
             });
         })
