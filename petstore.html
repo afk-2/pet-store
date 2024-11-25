@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
+    <script src="products.js"></script>
+
+    <link rel="manifest" href="petstore.webmanifest">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
+        }
+    </script>
+
+    <title>Vue.js Pet Depot</title>
+
+    <style>
+        .product {
+            border: 1px grey solid;
+            padding: 20px;
+            margin: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div id="app">
+            <h1 v-text="sitename"></h1>
+
+            <div v-if="showProduct">
+                <button v-on:click="showCheckOut">
+                    <span v-if="cartItemCount > 0">{{ cartItemCount }}</span>
+                    <span class="fas fa-cart-plus"></span>
+                    Checkout
+                </button>
+
+                <div class="product" v-for="product in sortedProducts">
+                    <figure>
+                        <img v-bind:src="product.image" width="200px">
+                    </figure>
+        
+                    <h2 v-text="product.title"></h2>
+                    <p v-html="product.description"></p>
+                    <p v-text="product.price + ' USD'"></p>
+                    <p>Available stock: {{ product.availableInventory }}</p>
+    
+                    <div>
+                        <span v-for="n in product.rating">★</span>
+                        <span v-for="n in 5 - product.rating">☆</span>
+                    </div>
+                    
+                    <!-- <span v-if="itemsLeft === 0">All out!</span>
+                    <span v-else-if="itemsLeft < 5">Only {{ itemsLeft }} items left!</span>
+                    <span v-else>Buy now!</span> -->
+
+                    <span v-if="product.availableInventory === cartCount(product.id)">
+                        All out!
+                    </span>
+                    <span v-else-if="product.availableInventory - cartCount(product.id)">
+                        Only {{ product.availableInventory - cartCount(product.id) }} left!
+                    </span>
+                    <span v-else>
+                        Buy now!
+                    </span>
+    
+                    <button v-if="canAddToCart(product)" v-on:click="addToCart(product)">
+                        Add To Cart
+                    </button>
+                    <button v-else disabled="disabled">
+                        Add to cart (Out of stock)
+                    </button>
+                </div>
+            </div>
+
+            <div v-else>
+                <h2>Checkout</h2>
+
+                <p>
+                    <strong>First Name: </strong>
+                    <input v-model.trim="order.firstName">
+                </p>
+                <p>
+                    <strong>Last Name: </strong>
+                    <input v-model.trim="order.lastName">
+                </p>
+                <p>
+                    <strong>Address: </strong>
+                    <input v-model="order.address">
+                </p>
+                <p>
+                    <strong>City: </strong>
+                    <input v-model="order.city">
+                </p>
+                <p>
+                    <strong>State: </strong>
+                    <select v-model="order.state">
+                        <option disabled value="">State</option>
+                        <option v-for="(state, key) in states"
+                            v-bind:value="state">
+                            {{ key }}
+                        </option>
+                    </select>
+                </p>
+                <p>
+                    <strong>Zip/Postal Code: </strong>
+                    <input v-model.number="order.zip" type="number">
+                </p>
+                <p>
+                    <input type="checkbox" id="gift" value="true" v-model="order.gift"
+                        v-bind:true-value="order.sendGift"
+                        v-bind:false-value="order.dontSendGift">
+                    <label for="gift">Ship as gift?</label>
+                </p>
+                <p>
+                    <input type="radio" id="home" name="rad-button" value="Home" v-model="order.home">
+                    <label for="home">Home</label>
+                    <input type="radio" id="business" name="rad-button" value="Business" v-model="order.business">
+                    <label for="business">Business</label>
+                </p>
+
+                <h2>Order Information</h2>
+                <p>First Name: {{ order.firstName }}</p>
+                <p>Last Name: {{ order.lastName }}</p>
+                <p>Address: {{ order.address }}</p>
+                <p>City: {{ order.city }}</p>
+                <p>Zip: {{ order.zip }}</p>
+                <p>State: {{ order.state }}</p>
+                <p>Gift? : {{ order.gift }}</p>
+                <p>Home or Business? : {{ order.method }}</p>
+
+                <button v-on:click="submitForm">Place Order</button>
+            </div>
+        </div>
+    </main>
+
+    <script type="text/javascript">
+        let webstore = new Vue({
+            el: '#app',
+            data: {
+                sitename: "Vue.js Pet Depot",
+                showProduct: true,
+                products: products,
+                cart: [],
+                order: {
+                    firstName: '',
+                    lastName: '',
+                    address: '',
+                    city: '',
+                    zip: '',
+                    state: '',
+                    method: 'Home',
+                    gift: 'false',
+                    sendGift: 'Send as a gift',
+                    dontSendGift: 'Do not send as a gift'
+                },
+                states: {
+                    AL: "Alabama",
+                    AR: 'Arizona',
+                    CA: 'California',
+                    NV: 'Neveda'
+                }
+            },
+            methods: {
+                addToCart: function(product) {
+                    if (this.canAddToCart(product)) {
+                        this.cart.push(product.id); // Add the product ID to the cart
+                    }
+                },
+                canAddToCart(product) {
+                    return product.availableInventory > this.cartCount(product.id); // Check inventory
+                },
+                cartCount(id) {
+                    let count = 0;
+                    
+                    for (let i = 0; i < this.cart.length; i++) {
+                        if (this.cart[i] === id) {
+                            count++;
+                        }
+                    }
+
+                    return count;
+                },
+                showCheckOut: function() {
+                    this.showProduct = !this.showProduct; // Toggle the product view
+                },
+                submitForm: function() {
+                    alert("Order submitted!")
+                }
+            },
+            computed: {
+                cartItemCount: function() {
+                    return this.cart.length; // Return the number of items in the cart
+                },
+                itemsLeft: function() {
+                    return this.product.availableInventory - this.cartItemCount;
+                },
+                sortedProducts() {
+                    let productsArray = this.products.slice();
+
+                    function compare(a, b) {
+                        if (a.price > b.price) {
+                            return 1;
+                        }
+                        if (a.price < b.price) {
+                            return -1;
+                        }
+
+                        return 0;
+                    }
+
+                    return productsArray.sort(compare);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
