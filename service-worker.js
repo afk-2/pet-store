@@ -1,4 +1,20 @@
 let cacheName = "petstore-v1";
+self.addEventListener("activate", (e) => {
+    console.log("[Service Worker] Activate");
+    e.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((name) => {
+                    if (name !== cacheName) {
+                        console.log("[Service Worker] Deleting old cache:", name);
+                        return caches.delete(name);
+                    }
+                })
+            );
+        })
+    );
+});
+
 let cacheFiles = [
     "index.html",
     "products.js",
@@ -7,8 +23,8 @@ let cacheFiles = [
     "imgs/adults-plain-cotton-tshirt-2-pack-teal.jpg",
     "imgs/athletic-cotton-socks-6-pairs.jpg",
     "imgs/backpack.jpg",
-    "imgs/calculator.jpg",
-    "imgs/cat-food.jpg",
+    "imgs/calculator.png",
+    "imgs/cat-food.png",
     "imgs/cat.jpg",
     "imgs/icon-store-512.png",
 ];
@@ -35,6 +51,11 @@ self.addEventListener("install", (e) => {
 // })
 
 self.addEventListener("fetch", function (e) {
+    // Ignore requests with unsupported schemes
+    if (e.request.url.startsWith("chrome-extension://")) {
+        console.warn("[Service Worker] Ignoring request to unsupported scheme:", e.request.url);
+        return;
+    }
     e.respondWith(
         caches.match(e.request).then(function (r) {
             // Download the file if it is not in the cache
